@@ -1,88 +1,67 @@
 // --------------------------------------------------
-// Cloudflare Worker: Google Calendar Proxy
+// WORKER: GOOGLE CALENDAR PROXY
 // --------------------------------------------------
 
-const CALENDAR_ID = 'Zmx1a2VnYW1pbmc1N0BnbWFpbC5jb20@group.calendar.google.com';
-const CACHE_TTL = 300; // cache responses for 5 minutes
+const CALENDAR_ID = 'f555019ab00277f6f3489e09c1a825bd3c9f089eca9d2cf96d6619d4f460e6d8@group.calendar.google.com';
+const CACHE_TTL = 300; // 5 minutes
 
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
+export default {
+  async fetch(request, env) {
+    // Allowed origins for CORS
+    const ALLOWED_ORIGINS = [
+      "https://flukegaming.com",
+      "https://test.flukegaming.com"
+    ];
 
-async function handleRequest(request) {
-  const ALLOWED_ORIGINS = [
-    "https://flukegaming.com",
-    "https://test.flukegaming.com"
-  ];
+    const origin = request.headers.get("Origin") || "";
+    const corsHeaders = {
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json",
+    };
 
-  // Enable CORS for frontend requests
-  const corsHeaders = {
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Content-Type": "application/json",
-  };
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      corsHeaders["Access-Control-Allow-Origin"] = origin;
+    }
 
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    corsHeaders["Access-Control-Allow-Origin"] = origin;
-  }
+    // Handle preflight OPTIONS requests
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
 
-  if (request.method === 'OPTIONS') {
-    // Preflight request
-    return new Response(null, { headers: corsHeaders })
-  }
+    const cache = caches.default;
+    const cacheKey = new Request(request.url, request);
 
-  const cache = caches.default
-  const cacheKey = new Request(request.url, request)
-  
-  // Check cache first
-  let response = await cache.match(cacheKey)
-  if (response) return response
+    // Serve from cache if available
+    let response = await cache.match(cacheKey);
+    if (response) return response;
 
-  try {
-    const apiKey = GCALENDAR_API_KEY // Worker secret
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${CALENDAR_ID}/events?key=${apiKey}&timeMin=${new Date().toISOString()}&singleEvents=true&orderBy=startTime`
-    
-    const res = await fetch(url)
-    const data = await res.json()
+    try {
+      // Access your secret via env
+      const apiKey = env.GCALENDAR_API_KEY;
+      if (!apiKey) throw new Error("GCALENDAR_API_KEY secret not found");
 
-    // Return JSON with CORS headers
-    response = new Response(JSON.stringify(data), { headers: corsHeaders })
+      // Google Calendar API URL for upcoming events
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${CALENDAR_ID}/events?key=${apiKey}&timeMin=${new Date().toISOString()}&singleEvents=true&orderBy=startTime`;
 
-    // Cache the response
-    response.headers.append('Cache-Control', `public, max-age=${CACHE_TTL}`)
-    await cache.put(cacheKey, response.clone())
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Google API error: ${res.statusText}`);
 
-    return response
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders })
-  }
-}
+      const data = await res.json();
 
-// -------------------------
-// corsResponse helpers
-// -------------------------
-const ALLOWED_ORIGINS = [
-  "https://flukegaming.com",
-  "https://test.flukegaming.com"
-];
+      // Create response with CORS headers
+      response = new Response(JSON.stringify(data), { headers: corsHeaders });
 
-function corsHeaders(req) {
-  const origin = req.headers.get("Origin") || "";
-  console.log("Request origin:", origin);
+      // Cache the response
+      response.headers.append("Cache-Control", `public, max-age=${CACHE_TTL}`);
+      await cache.put(cacheKey, response.clone());
 
-  const headers = {
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Content-Type": "application/json",
-  };
-
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    headers["Access-Control-Allow-Origin"] = origin;
-  }
-
-  return headers;
-}
-
-function corsResponse(body, req, status = 200) {
-  return new Response(body, { status, headers: corsHeaders(req) });
-}
+      return response;
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: corsHeaders,
+      });
+    }
+  },
+};

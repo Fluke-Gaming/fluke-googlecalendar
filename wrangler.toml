@@ -3,6 +3,7 @@ main = "src/index.js"
 compatibility_date = "2026-02-18"
 
 [vars]
+GCALENDAR_API_KEY = "AIzaSyCb6jwL_E2d6oTCBf8AUreQuNY3OAa6RQQ"
 
 [observability]
 [observability.logs]
