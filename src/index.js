@@ -2,7 +2,7 @@
 // WORKER: GOOGLE CALENDAR PROXY
 // --------------------------------------------------
 
-const CALENDAR_ID = 'f555019ab00277f6f3489e09c1a825bd3c9f089eca9d2cf96d6619d4f460e6d8@group.calendar.google.com';
+const CALENDAR_ID = '@group.calendar.google.com';
 const CACHE_TTL = 300; // 5 minutes
 
 export default {
