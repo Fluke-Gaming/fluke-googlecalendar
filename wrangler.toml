@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2026-02-18"
 
 [vars]
-CALENDAR_ID = "f555019ab00277f6f3489e09c1a825bd3c9f089eca9d2cf96d6619d4f460e6d8@group.calendar.google.com"
+CALENDAR_ID = "flukegaming57@gmail.com"
 
 [observability]
 [observability.logs]
