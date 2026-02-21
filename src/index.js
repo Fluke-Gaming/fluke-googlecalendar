@@ -46,11 +46,30 @@ export default {
 
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Google API error: ${res.statusText}`);
-
       const data = await res.json();
 
+      const now = new Date();
+      const upcomingEvents = data.items
+      .filter(event => {
+        const start = new Date(event.start.dateTime || event.start.date);
+        return start > now;
+      })
+      .sort((a, b) => {
+        const aStart = new Date(a.start.dateTime || a.start.date);
+        const bStart = new Date(b.start.dateTime || b.start.date);
+        return aStart - bStart;
+      })
+      .slice(0, 10);
+
+      const simplified = upcomingEvents.map(event => ({
+        title: event.summary,
+        start: event.start.dateTime || event.start.date,
+        end: event.end.dateTime || event.end.date,
+        description: event.description || null
+      }));
+
       // Create response with CORS headers
-      response = new Response(JSON.stringify(data), { headers: corsHeaders });
+      response = new Response(JSON.stringify(simplified), { headers: corsHeaders });
 
       // Cache the response
       response.headers.append("Cache-Control", `public, max-age=${CACHE_TTL}`);
