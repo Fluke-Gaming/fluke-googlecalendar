@@ -2,7 +2,6 @@
 // WORKER: GOOGLE CALENDAR PROXY
 // --------------------------------------------------
 
-const CALENDAR_ID = '@group.calendar.google.com';
 const CACHE_TTL = 300; // 5 minutes
 
 export default {
@@ -39,10 +38,11 @@ export default {
     try {
       // Access your secret via env
       const apiKey = env.GCALENDAR_API_KEY;
+      const calendar = env.CALENDAR_ID;
       if (!apiKey) throw new Error("GCALENDAR_API_KEY secret not found");
 
       // Google Calendar API URL for upcoming events
-      const url = `https://www.googleapis.com/calendar/v3/calendars/${CALENDAR_ID}/events?key=${apiKey}&timeMin=${new Date().toISOString()}&singleEvents=true&orderBy=startTime`;
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${calendar}/events?key=${apiKey}&timeMin=${new Date().toISOString()}&singleEvents=true&orderBy=startTime`;
 
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Google API error: ${res.statusText}`);
