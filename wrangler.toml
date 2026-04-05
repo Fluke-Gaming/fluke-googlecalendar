@@ -1,4 +1,4 @@
-name = "calendar-proxy"
+name = "google-calendar"
 main = "src/index.js"
 compatibility_date = "2026-02-18"
 
